@@ -1,149 +1,112 @@
-;(function () {
-	
-	'use strict';
+$(function() {
+  'use strict';
 
-	var isMobile = {
-		Android: function() {
-			return navigator.userAgent.match(/Android/i);
-		},
-			BlackBerry: function() {
-			return navigator.userAgent.match(/BlackBerry/i);
-		},
-			iOS: function() {
-			return navigator.userAgent.match(/iPhone|iPad|iPod/i);
-		},
-			Opera: function() {
-			return navigator.userAgent.match(/Opera Mini/i);
-		},
-			Windows: function() {
-			return navigator.userAgent.match(/IEMobile/i);
-		},
-			any: function() {
-			return (isMobile.Android() || isMobile.BlackBerry() || isMobile.iOS() || isMobile.Opera() || isMobile.Windows());
-		}
-	};
+  // Nav Menu
+  $(".nav-toggle").click(function() {
 
-	
-	var fullHeight = function() {
+    $(".full-page-container, .navigation-wrap").toggleClass("open");
+    if ($(".full-page-container").hasClass("open")) {
+      $(".nav-toggle").html('<i class="fa fa-times" aria-hidden="true"></i>');
+    } else {
+      $(".full-page-container, .navigation-wrap").removeClass("open");
+      $(".nav-toggle").html('<i class="fa fa-bars" aria-hidden="true"></i>');
+    };
+    $(".overlay").toggleClass("show");
 
-		if ( !isMobile.any() ) {
-			$('.js-fullheight').css('height', $(window).height());
-			$(window).resize(function(){
-				$('.js-fullheight').css('height', $(window).height());
-			});
-		}
-	};
+  });
 
-	// Parallax
-	var parallax = function() {
-		$(window).stellar();
-	};
+  $(".overlay, .search-toggle").click(function() {
+    $(".full-page-container, .navigation-wrap").removeClass("open");
+    $(".overlay").removeClass("show");
+    $(".nav-toggle").html('<i class="fa fa-bars" aria-hidden="true"></i>');
+  });
 
-	var contentWayPoint = function() {
-		var i = 0;
-		$('.animate-box').waypoint( function( direction ) {
+  $(window).on("resize", function() {
+    var e = $(this);
+    if (e.width() >= 991) {
+      $(".overlay").removeClass("show");
+      $(".full-page-container").removeClass("open");
+      $(".nav-toggle").html('<i class="fa fa-bars" aria-hidden="true"></i>');
+    }
+  });
 
-			if( direction === 'down' && !$(this.element).hasClass('animated-fast') ) {
-				
-				i++;
+  // Responsive Videos
+  $('.page-content').fitVids({
+    'customSelector': ['iframe[src*="ted.com"]']
+  });
 
-				$(this.element).addClass('item-animate');
-				setTimeout(function(){
+  // Medium's Image Zoom
+  $('.page img, .post img').attr('data-action', 'zoom');
+  $(".page a img, .post a img").removeAttr("data-action", "zoom");
 
-					$('body .animate-box.item-animate').each(function(k){
-						var el = $(this);
-						setTimeout( function () {
-							var effect = el.data('animate-effect');
-							if ( effect === 'fadeIn') {
-								el.addClass('fadeIn animated-fast');
-							} else if ( effect === 'fadeInLeft') {
-								el.addClass('fadeInLeft animated-fast');
-							} else if ( effect === 'fadeInRight') {
-								el.addClass('fadeInRight animated-fast');
-							} else {
-								el.addClass('fadeInUp animated-fast');
-							}
+  // Search Box
+  $('.search-toggle').click(function() {
+    $('.search-box').addClass('show');
+    $('.navigation-wrap').removeClass('open');
+  });
+  $('.btn-close').click(function() {
+    $('.search-box').removeClass('show');
+  });
 
-							el.removeClass('item-animate');
-						},  k * 100, 'easeInOutExpo' );
-					});
-					
-				}, 50);
-				
-			}
+  // Simple Search Settings
+  SimpleJekyllSearch({
+    searchInput: document.getElementById('search-input'),
+    resultsContainer: document.getElementById('results-container'),
+    json: '/search.json',
+    searchResultTemplate: '<li><a href="{url}">{title}</a></li>',
+    noResultsText: 'No results found'
+  })
 
-		} , { offset: '85%' } );
-	};
+  // Scroll To Top
+  $('.top').click(function () {
+    $('html, body').stop().animate({ scrollTop: 0 }, 'slow', 'swing');
+  });
+  $(window).scroll(function () {
+    if ($(this).scrollTop() > $(window).height()) {
+      $('.top').addClass("top-active");
+    } else {
+      $('.top').removeClass("top-active");
+    };
+  });
 
+  // Post Thumbnail Animation
+  $(".post-thumbnail").viewportChecker({
+    classToAdd: "visible",
+    classToRemove: "hidden",
+    removeClassAfterAnimation: true,
+    offset: 0
+  });
 
+  // Pagination
+  $(".load-more").click(loadMorePosts);
 
-	var goToTop = function() {
+  function loadMorePosts() {
+    var _this = this;
+    var $postsContainer = $(".wrapper");
+    var nextPage = parseInt($postsContainer.attr("data-page")) + 1;
+    var totalPages = parseInt($postsContainer.attr("data-totalPages"));
 
-		$('.js-gotop').on('click', function(event){
-			
-			event.preventDefault();
+    $(this).addClass("is-loading").text("Loading...");
 
-			$('html, body').animate({
-				scrollTop: $('html').offset().top
-			}, 500, 'easeInOutExpo');
-			
-			return false;
-		});
+    $.get("/page/" + nextPage, function(data) {
+      var htmlData = $.parseHTML(data);
+      var $articles = $(htmlData).find("article");
 
-		$(window).scroll(function(){
+      $postsContainer.attr("data-page", nextPage).append($articles);
 
-			var $win = $(window);
-			if ($win.scrollTop() > 200) {
-				$('.js-top').addClass('active');
-			} else {
-				$('.js-top').removeClass('active');
-			}
+        $(".post-thumbnail").viewportChecker({
+          classToAdd: "visible",
+          classToRemove: "hidden visible",
+          removeClassAfterAnimation: true,
+          offset: 0
+        });
 
-		});
-	
-	};
+      if ($postsContainer.attr("data-totalPages") == nextPage) {
+        $(".load-more").remove();
+      }
 
-	var pieChart = function() {
-		$('.chart').easyPieChart({
-			scaleColor: false,
-			lineWidth: 4,
-			lineCap: 'butt',
-			barColor: '#1ABFE8',
-			trackColor:	"#f5f5f5",
-			size: 160,
-			animate: 1000
-		});
-	};
+      $(_this).removeClass("is-loading");
+    });
+  }
 
-	var skillsWayPoint = function() {
-		if ($('#fh5co-skills').length > 0 ) {
-			$('#fh5co-skills').waypoint( function( direction ) {
-										
-				if( direction === 'down' && !$(this.element).hasClass('animated') ) {
-					setTimeout( pieChart , 400);					
-					$(this.element).addClass('animated');
-				}
-			} , { offset: '90%' } );
-		}
-
-	};
-
-
-	// Loading page
-	var loaderPage = function() {
-		$(".fh5co-loader").fadeOut("slow");
-	};
-
-	
-	$(function(){
-		contentWayPoint();
-		goToTop();
-		loaderPage();
-		fullHeight();
-		parallax();
-		// pieChart();
-		skillsWayPoint();
-	});
-
-
-}());
+});
